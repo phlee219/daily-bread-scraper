@@ -118,9 +118,15 @@ def upload_to_drive(filename):
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
     try:
+        # 공유 드라이브(Shared Drive)에 업로드하려면 supportsAllDrives=True 옵션이 필수입니다.
         file = (
             service.files()
-            .create(body=file_metadata, media_body=media, fields="id")
+            .create(
+                body=file_metadata,
+                media_body=media,
+                fields="id",
+                supportsAllDrives=True,
+            )
             .execute()
         )
         print(f"업로드 완료. File ID: {file.get('id')}")
