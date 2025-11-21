@@ -10,7 +10,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 # --- 설정 ---
-DRIVE_FOLDER_NAME = "Daily Bread Files"
+# 공유된 구글 드라이브 폴더 ID
+FOLDER_ID = "1LHzJJyMNnBJpzq19l24RuaSh9o3JwNA4"
 # 서비스 계정 키 파일의 이름 또는 GitHub Secret에서 가져올 이름
 # 로컬 테스트 시에는 다운로드한 json 파일의 실제 이름으로 바꾸세요 (예: 'my-key.json')
 SERVICE_ACCOUNT_KEY_FILE = "SERVICE_ACCOUNT_KEY"
@@ -103,33 +104,14 @@ def create_word_doc(data_list):
     return filename
 
 
-def get_or_create_folder_id(service, folder_name):
-    query = f"mimeType='application/vnd.google-apps.folder' and name='{folder_name}' and trashed=false"
-    response = (
-        service.files()
-        .list(q=query, spaces="drive", fields="files(id, name)")
-        .execute()
-    )
-    files = response.get("files", [])
-    if files:
-        return files[0].get("id")
-    else:
-        file_metadata = {
-            "name": folder_name,
-            "mimeType": "application/vnd.google-apps.folder",
-        }
-        folder = service.files().create(body=file_metadata, fields="id").execute()
-        print(f"폴더 생성 완료: '{folder_name}'")
-        return folder.get("id")
-
-
 def upload_to_drive(filename):
     service = get_drive_service()
     if not service:
         return
-    folder_id = get_or_create_folder_id(service, DRIVE_FOLDER_NAME)
-    if not folder_id:
-        return
+
+    # 폴더 ID를 직접 사용하므로 검색이나 생성이 필요 없습니다.
+    folder_id = FOLDER_ID
+
     file_metadata = {"name": os.path.basename(filename), "parents": [folder_id]}
     media = MediaFileUpload(
         filename,
@@ -141,7 +123,7 @@ def upload_to_drive(filename):
             .create(body=file_metadata, media_body=media, fields="id")
             .execute()
         )
-        print(f"'{DRIVE_FOLDER_NAME}' 폴더에 업로드 완료. File ID: {file.get('id')}")
+        print(f"업로드 완료. File ID: {file.get('id')}")
     except Exception as e:
         print(f"업로드 실패: {e}")
 
