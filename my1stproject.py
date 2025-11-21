@@ -81,34 +81,30 @@ def scrape_ubf_org():
             except Exception as e:
                 print(f"ESV 본문 스크래핑 실패: {e}")
 
-        # 전체 텍스트를 가져와서 처리
-        full_text = soup.get_text(separator="\n", strip=True)
+        # 묵상 본문 찾기 (HTML 구조 기반)
         devotional_content = "본문 내용을 자동으로 추출하지 못했습니다."
+        panel_body = soup.find("div", class_="panel_body")
 
-        try:
-            # 제목 바로 다음부터 "Prayer:" 전까지의 내용을 추출
-            start_marker = title
-            end_marker = "Prayer:"
-            start_index = full_text.find(start_marker) + len(start_marker)
-            end_index = full_text.find(end_marker, start_index)
+        if panel_body:
+            # 묵상 문단 추출 (class="mb-3"인 p 태그)
+            devotional_paragraphs = panel_body.find_all("p", class_="mb-3")
+            devotional_texts = [p.get_text(strip=True) for p in devotional_paragraphs]
 
-            if start_index > len(start_marker) - 1 and end_index != -1:
-                content_text = full_text[start_index:end_index].strip()
+            # 기도(Prayer)와 한마디(One Word) 추출
+            prayer_strong = panel_body.find(
+                "strong", string=lambda text: text and "Prayer" in text
+            )
+            if prayer_strong and prayer_strong.parent.name == "p":
+                devotional_texts.append(prayer_strong.parent.get_text(strip=True))
 
-                # 불필요한 텍스트들 제거
-                passage_text = soup.find(string=lambda text: "Passage:" in text)
-                if passage_text:
-                    content_text = content_text.replace(passage_text.strip(), "")
+            one_word_strong = panel_body.find(
+                "strong", string=lambda text: text and "One Word" in text
+            )
+            if one_word_strong and one_word_strong.parent.name == "p":
+                devotional_texts.append(one_word_strong.parent.get_text(strip=True))
 
-                key_verse_text = soup.find(string=lambda text: "Key verse:" in text)
-                if key_verse_text:
-                    content_text = content_text.replace(key_verse_text.strip(), "")
-
-                content_text = content_text.replace(" Show Bible NIV ESV", "").strip()
-                devotional_content = content_text
-
-        except Exception as e:
-            print(f"묵상 본문 파싱 중 오류 발생: {e}")
+            if devotional_texts:
+                devotional_content = "\n\n".join(devotional_texts)
 
         # ESV 본문과 묵상 본문 합치기
         final_content = esv_content + devotional_content
