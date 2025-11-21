@@ -146,3 +146,22 @@ def main():
 
 if __name__ == "__main__":
     main()
+def test_drive_access():
+    service = get_drive_service()
+    if not service:
+        print("서비스 계정 인증 실패")
+        return
+
+    try:
+        results = service.files().list(pageSize=10, fields="files(id, name)").execute()
+        items = results.get('files', [])
+        if not items:
+            print("파일이 없습니다.")
+        else:
+            print("Google Drive 파일 목록:")
+            for item in items:
+                print(f"{item['name']} ({item['id']})")
+    except Exception as e:
+        print(f"Google Drive 접근 실패: {e}")
+
+test_drive_access()
