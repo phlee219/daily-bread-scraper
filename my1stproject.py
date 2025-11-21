@@ -53,46 +53,67 @@ def scrape_ubf_org():
         title_tag = soup.find("h3")
         title = title_tag.get_text(strip=True) if title_tag else "No Title Found"
 
+        # Bible Gateway 링크 찾기
+        passage_link = soup.find(
+            "a", href=lambda href: href and "biblegateway.net" in href
+        )
+        esv_content = ""
+        if passage_link:
+            esv_url = passage_link["href"].replace("version=NIV", "version=ESV")
+            try:
+                esv_response = requests.get(esv_url)
+                esv_response.raise_for_status()
+                esv_soup = BeautifulSoup(esv_response.text, "html.parser")
+
+                # 성경 본문 컨테이너 찾기
+                passage_div = esv_soup.find("div", class_="passage-text")
+                if passage_div:
+                    # 구절 번호와 각주 제거
+                    for sup in passage_div.find_all(
+                        "sup", class_=["versenum", "crossreference"]
+                    ):
+                        sup.decompose()
+
+                    # 각 절을 p 태그 기준으로 합치기
+                    verses = [p.get_text(strip=True) for p in passage_div.find_all("p")]
+                    esv_content = "\n\n".join(verses) + "\n\n"
+
+            except Exception as e:
+                print(f"ESV 본문 스크래핑 실패: {e}")
+
         # 전체 텍스트를 가져와서 처리
         full_text = soup.get_text(separator="\n", strip=True)
-
-        content = "본문 내용을 자동으로 추출하지 못했습니다."
+        devotional_content = "본문 내용을 자동으로 추출하지 못했습니다."
 
         try:
             # 제목 바로 다음부터 "Prayer:" 전까지의 내용을 추출
             start_marker = title
             end_marker = "Prayer:"
-
             start_index = full_text.find(start_marker) + len(start_marker)
             end_index = full_text.find(end_marker, start_index)
 
             if start_index > len(start_marker) - 1 and end_index != -1:
-                # 중간에 있는 불필요한 부분들 제거
+                content_text = full_text[start_index:end_index].strip()
+
+                # 불필요한 텍스트들 제거
                 passage_text = soup.find(string=lambda text: "Passage:" in text)
                 if passage_text:
-                    passage_text = passage_text.strip()
+                    content_text = content_text.replace(passage_text.strip(), "")
 
                 key_verse_text = soup.find(string=lambda text: "Key verse:" in text)
                 if key_verse_text:
-                    key_verse_text = key_verse_text.strip()
+                    content_text = content_text.replace(key_verse_text.strip(), "")
 
-                content_text = full_text[start_index:end_index].strip()
-
-                if passage_text and passage_text in content_text:
-                    content_text = content_text.replace(passage_text, "")
-
-                if key_verse_text and key_verse_text in content_text:
-                    content_text = content_text.replace(key_verse_text, "")
-
-                # "Show Bible NIV ESV" 와 같은 불필요한 텍스트 제거
                 content_text = content_text.replace(" Show Bible NIV ESV", "").strip()
-
-                content = content_text
+                devotional_content = content_text
 
         except Exception as e:
-            print(f"본문 내용 파싱 중 오류 발생: {e}")
+            print(f"묵상 본문 파싱 중 오류 발생: {e}")
 
-        return {"source": "UBF.org", "title": title, "content": content}
+        # ESV 본문과 묵상 본문 합치기
+        final_content = esv_content + devotional_content
+
+        return {"source": "UBF.org", "title": title, "content": final_content}
     except Exception as e:
         print(f"UBF.org 스크래핑 실패: {e}")
         return None
