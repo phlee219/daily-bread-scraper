@@ -44,7 +44,7 @@ def get_drive_service():
 # 이전과 거의 동일하므로 생략합니다. main_job 함수만 확인하세요.
 # (실제 코드에는 모든 함수가 포함되어야 합니다)
 def scrape_ubf_org():
-    url = "https://www.ubf.org/daily-breads"
+    url = "https://www.ubf.org/dailybread/today"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -152,3 +152,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
