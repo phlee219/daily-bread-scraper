@@ -11,7 +11,7 @@ from googleapiclient.http import MediaFileUpload
 
 # --- 설정 ---
 # 공유된 구글 드라이브 폴더 ID
-FOLDER_ID = "1LHzJJyMNnBJpzq19l24RuaSh9o3JwNA4"
+FOLDER_ID = "1Y0K1FaTb2STwT7Fp6nk-Zlc4AyZfFVRv"
 # 서비스 계정 키 파일의 이름 또는 GitHub Secret에서 가져올 이름
 # 로컬 테스트 시에는 다운로드한 json 파일의 실제 이름으로 바꾸세요 (예: 'my-key.json')
 SERVICE_ACCOUNT_KEY_FILE = "SERVICE_ACCOUNT_KEY"
@@ -165,3 +165,4 @@ def test_drive_access():
         print(f"Google Drive 접근 실패: {e}")
 
 test_drive_access()
+
