@@ -49,20 +49,49 @@ def scrape_ubf_org():
         response = requests.get(url)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
+
         title_tag = soup.find("h3")
         title = title_tag.get_text(strip=True) if title_tag else "No Title Found"
-        content_paragraphs = []
-        if title_tag:
-            for sibling in title_tag.find_next_siblings():
-                if sibling.name == "p":
-                    content_paragraphs.append(sibling.get_text(strip=True))
-                elif sibling.name and (
-                    sibling.name.startswith("h") or sibling.name == "hr"
-                ):
-                    break
-        content = "\n\n".join(content_paragraphs)
-        if not content:
-            content = "본문 내용을 자동으로 추출하지 못했습니다."
+
+        # 전체 텍스트를 가져와서 처리
+        full_text = soup.get_text(separator="\n", strip=True)
+
+        content = "본문 내용을 자동으로 추출하지 못했습니다."
+
+        try:
+            # 제목 바로 다음부터 "Prayer:" 전까지의 내용을 추출
+            start_marker = title
+            end_marker = "Prayer:"
+
+            start_index = full_text.find(start_marker) + len(start_marker)
+            end_index = full_text.find(end_marker, start_index)
+
+            if start_index > len(start_marker) - 1 and end_index != -1:
+                # 중간에 있는 불필요한 부분들 제거
+                passage_text = soup.find(string=lambda text: "Passage:" in text)
+                if passage_text:
+                    passage_text = passage_text.strip()
+
+                key_verse_text = soup.find(string=lambda text: "Key verse:" in text)
+                if key_verse_text:
+                    key_verse_text = key_verse_text.strip()
+
+                content_text = full_text[start_index:end_index].strip()
+
+                if passage_text and passage_text in content_text:
+                    content_text = content_text.replace(passage_text, "")
+
+                if key_verse_text and key_verse_text in content_text:
+                    content_text = content_text.replace(key_verse_text, "")
+
+                # "Show Bible NIV ESV" 와 같은 불필요한 텍스트 제거
+                content_text = content_text.replace(" Show Bible NIV ESV", "").strip()
+
+                content = content_text
+
+        except Exception as e:
+            print(f"본문 내용 파싱 중 오류 발생: {e}")
+
         return {"source": "UBF.org", "title": title, "content": content}
     except Exception as e:
         print(f"UBF.org 스크래핑 실패: {e}")
@@ -152,4 +181,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
