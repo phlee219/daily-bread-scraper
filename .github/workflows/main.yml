@@ -2,8 +2,9 @@ name: Scrape Daily Bread
 
 on:
   schedule:
-  # 매일 오전 6시 (미국 동부 시간 기준 UTC 11시)에 실행
-  - cron: '0 11 * * *'
+    # 매일 밤 11시 (미국 동부 표준시 기준 UTC 4시)에 실행
+    # 참고: 서머타임 기간에는 동부 시간 기준 자정에 실행됩니다.
+    - cron: '0 4 * * *'
   workflow_dispatch:
     # Actions 탭에서 수동으로 실행할 수 있게 함
 
